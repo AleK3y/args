@@ -33,7 +33,7 @@ One simple example would be from my [4chan-d](https://github.com/AleK3y/4chan-d)
 ```
 
 ## Missing required parameters
-If a required parameter is missing, the `update` function will throw a `MissingMandatoryArgument` exception.
+If a required parameter is missing, the `update_args` function will throw a `MissingMandatoryArgument` exception.
 
 ## Example
 Following the information dictionary structure you can initialize the class like this:
