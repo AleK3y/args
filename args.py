@@ -58,7 +58,7 @@ class Arguments:
 		print("Usage: " + self.info["usage"])
 		
 		for line in self.info["description"].split("\n"):
-			print(" "*INDENTATION + line)
+			print(" "*self.INDENTATION + line)
 		
 		print()
 
@@ -68,8 +68,8 @@ class Arguments:
 
 		for arg in merged:
 			print(
-				" "*(INDENTATION+1) + arg +
-				" "*INDENTATION*2 + merged[arg]["description"]
+				" "*(self.INDENTATION+1) + arg +
+				" "*self.INDENTATION*2 + merged[arg]["description"]
 			, end="")
 
 			if not merged[arg]["required"]:
