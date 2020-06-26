@@ -57,15 +57,17 @@ class Arguments:
 
 		print("Usage: " + self.info["usage"])
 		
-		for line in self.info["description"].split("\n"):
-			print(" "*self.INDENTATION + line)
-		
+		if self.info["description"]:
+			for line in self.info["description"].split("\n"):
+				print(" "*self.INDENTATION + line)
+
 		print()
 
 		params = self.info["parameters"]
 		opts = self.info["options"]
 		merged = dict(list(params.items()) + list(opts.items()))
 
+		print(" "*self.INDENTATION + "Options:")
 		for arg in merged:
 			print(
 				" "*(self.INDENTATION+1) + arg +
