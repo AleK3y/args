@@ -52,7 +52,7 @@ except args.Arguments.MissingMandatoryArgument:
 
 ## Access the arguments
 You can either access the dictionary from `parser.args` or `parser.get_args()`. \
-An example how its structure would be:
+An example of how its structure would be:
 ```python
 {
     "-u": "https://boards.4channel.org/g/thread/51971506",    # For parameters
