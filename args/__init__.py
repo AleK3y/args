@@ -72,9 +72,4 @@ class Arguments:
 			print(
 				" "*(self.INDENTATION+1) + arg +
 				" "*self.INDENTATION*2 + merged[arg]["description"]
-			, end="")
-
-			if not merged[arg]["required"]:
-				print(" (optional)", end="")
-
-			print()
+			)
