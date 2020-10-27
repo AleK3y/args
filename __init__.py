@@ -72,8 +72,8 @@ class Arguments:
 
 			# Get the list of all possible parameters
 			params_list = list(info_args["parameters"].keys())
-			for arg, value in info_args["parameters"].items():
-				params_list += value["aliases"] if "aliases" in value else []
+			for item in info_args["parameters"].items():
+				params_list += item[1]["aliases"] if "aliases" in item[1] else []
 
 			# Parameters
 			if arg in params_list:
