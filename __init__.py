@@ -1,3 +1,5 @@
+from sys import argv
+
 class Arguments:
 
 	##
@@ -11,7 +13,7 @@ class Arguments:
 	info = None
 	args = {
 		"positional": [],
-		"parameters": [],
+		"parameters": {},
 		"options": []
 	}
 
@@ -50,6 +52,10 @@ class Arguments:
 	def get_args(self):
 		return self.args
 
+	def get_arg_list(self):
+		import sys
+		return sys.argv
+
 	def get_info(self):
 		return self.info
 
@@ -64,12 +70,17 @@ class Arguments:
 		while i<len(sys.argv):
 			arg = sys.argv[i]
 
+			# Get the list of all possible parameters
+			params_list = list(info_args["parameters"].keys())
+			for arg, value in info_args["parameters"].items():
+				params_list += value["aliases"] if "aliases" in value else []
+
 			# Parameters
-			if arg in info_args["parameters"]:
+			if arg in params_list:
 				if i+1 >= len(sys.argv):
 					raise self.WrongArgumentsPlacement(arg)
 
-				self.args["parameters"].append({arg: sys.argv[i+1]})
+				self.args["parameters"][arg] = sys.argv[i+1]
 				i += 1
 
 			# Options
@@ -87,7 +98,7 @@ class Arguments:
 		for arg, value in info_args["parameters"].items():
 			parsed = False
 			for parsed_arg in self.args["parameters"]:
-				if list(parsed_arg.keys())[0] == arg:
+				if parsed_arg in params_list:
 					parsed = True
 					break
 
