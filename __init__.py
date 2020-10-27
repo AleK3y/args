@@ -53,7 +53,7 @@ class Arguments:
 	def get_info(self):
 		return self.info
 
-	def update(self):
+	def parse(self):
 		import sys
 
 		info_args = self.info["arguments"]

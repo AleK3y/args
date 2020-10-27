@@ -42,7 +42,7 @@ One simple example would be this one:
 ```
 
 ## Exceptions
-After initializing the class you'll have to run the `update` function. The function might throw these exceptions:
+After initializing the class you'll have to run the `parse` function. The function might throw these exceptions:
 - `MissingRequiredArgument`: When a required or positional parameter is missing
 - `WrongArgumentsPlacement`
 - `TooFewArguments`: When the amount of positional parameters is lower than the expected
@@ -56,7 +56,7 @@ from args import Arguments
 
 parser = Arguments(infos)
 try:
-	parser.update()
+	parser.parse()
 except (Arguments.MissingRequiredArgument, Arguments.WrongArgumentsPlacement, Arguments.TooFewArguments):
 	parser.usage()
 	exit()
