@@ -2,31 +2,36 @@
 Parse the arguments from `sys.argv` or print the usage.
 
 ## Class parameters
-The only parameter of the class is `info`.
+The only required parameter of the class is `info`, and it contains all the details about the arguments to parse.
 
 One simple example would be this one:
 ```python
 {
-	#"usage": "",		# A default usage will be computed if omitted
+	#"usage": "",		# A default usage will be automatically computed if omitted
 	"description": "Calculate the power.",
 	"arguments": {
 
-		# Positional arguments are always required
+		# Positional arguments are considered always required
 		"positional": {
 			"BASE": {
-				"description": ""
+				"description": "The part that is multiplied by itself."
 			},
-			"EXPONENT": {
-				"description": ""
-			}
+			"EXPONENT": {}
 		},
 
+		# Can be both required or not
 		"parameters": {
-			"-o": {
-				"aliases": ["--output"],
-				"name": "FILE",
-				"description": "set the file to write to",
+			"-r": {
+				"aliases": ["--round"],
+				"name": "PLACE",
+				"description": "set the decimal place to round to",
 				"required": True,
+			},
+			"-o": {
+				"aliases": ["--output", "--output-file"],
+				"name": "FILE",
+				"description": "set the output file",
+				"required": False,
 			}
 		},
 
@@ -34,7 +39,10 @@ One simple example would be this one:
 		"options": {
 			"-v": {
 				"aliases": ["--verbose"],
-				"description": "report more info about the operations",
+				"description": "report more info about the calculations",
+			},
+			"-t": {
+				"description": "run the calculations in multiple threads"
 			}
 		}
 	}
@@ -42,13 +50,15 @@ One simple example would be this one:
 ```
 
 ## Exceptions
-After initializing the class you'll have to run the `parse` function. The function might throw these exceptions:
+After initializing the class you'll have to run the `parse` function and it might throw these exceptions:
+- `ParseException`: Includes all the following exceptions
+- `WrongInfoFormat`
 - `MissingRequiredArgument`: When a required or positional parameter is missing
 - `WrongArgumentsPlacement`
-- `TooFewArguments`: When the amount of positional parameters is lower than the expected
+- `WrongArgumentsNumber`: When the amount of positional parameters is not the expected
 
 ## Example
-Following the information dictionary structure you can initialize the class like this:
+With the info dictionary structure you can initialize the class like this:
 ```python
 from args import Arguments
 
@@ -57,18 +67,18 @@ from args import Arguments
 parser = Arguments(infos)
 try:
 	parser.parse()
-except (Arguments.MissingRequiredArgument, Arguments.WrongArgumentsPlacement, Arguments.TooFewArguments):
+except Arguments.ParseException:
 	parser.usage()
 	exit()
 ```
 
 ## Access the arguments
 You can either access the dictionary from `parser.args` or `parser.get_args()`. \
-An example of how it would be:
+An example of what it would return:
 ```python
 {
 	"positional": ["2", "4"],
-	"parameters": [{"-o": "file"}],
-	"options": []
+	"parameters": [{"-r": ["0"], "-o": ["file1", "file2"]}],
+	"options": ["-t"]
 }
 ```
