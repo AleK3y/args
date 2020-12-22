@@ -1,4 +1,5 @@
-from sys import argv
+import sys
+from copy import deepcopy
 
 class Arguments:
 
@@ -7,7 +8,6 @@ class Arguments:
 	#
 
 	INDENTATION = 6
-	DEFAULT_NAME = "VALUE"
 	MAX_USAGE_PARAMETERS = 4
 
 	info = None
@@ -21,71 +21,89 @@ class Arguments:
 	# Exceptions
 	#
 
-	class MissingRequiredArgument(Exception):
+	class ParseException(Exception):
 		pass
-	class WrongArgumentsPlacement(Exception):
+	class WrongInfoFormat(ParseException):
 		pass
-	class TooFewArguments(Exception):
+	class MissingRequiredArgument(ParseException):
+		pass
+	class WrongArgumentsPlacement(ParseException):
+		pass
+	class WrongArgumentsNumber(ParseException):
 		pass
 
 	##
-	# Functions
+	# Methods
 	#
 
 	def __init__(self, info):
 		if "arguments" not in info:
-			raise ValueError()
+			raise WrongInfoFormat()
 
-		self.info = info
-		info_args = self.info["arguments"]
+		self.info = deepcopy(info)		# Allow for modifications
+		self.info_args = self.info["arguments"]
 
 		# Add missing sections
-		for arg_type in self.args.keys():
-			if arg_type not in info_args:
-				info_args[arg_type] = {}
+		for required_arg_type, container in self.args.items():
+			if required_arg_type not in self.info_args:
+				self.info_args[required_arg_type] = container.copy()
 
 		# Add missing names on parameters
-		for arg, value in info_args["parameters"].items():
+		for value in self.info_args["parameters"].values():
 			if "name" not in value:
-				value["name"] = self.DEFAULT_NAME
+				value["name"] = ""
 
 	def get_args(self):
 		return self.args
 
-	def get_arg_list(self):
-		import sys
+	def get_argv(self):
 		return sys.argv
 
 	def get_info(self):
 		return self.info
 
+	def __get_valid_aliases(self, args_definition):
+		valid_aliases = list(args_definition.keys())
+		for value in args_definition.values():
+			if "aliases" in value:
+				valid_aliases += value["aliases"]
+
+		return valid_aliases
+
+	def __get_unaliased_argument(self, alias, args_definition):
+		unaliased_arg = None
+		for key, value in args_definition.items():
+			if "aliases" in value and alias in value["aliases"]:
+				unaliased_arg = key
+				break
+
+		return unaliased_arg if unaliased_arg else alias
+
 	def parse(self):
-		import sys
 
-		info_args = self.info["arguments"]
+		## Parse every argument ##
 
-		## Parse the arguments ##
-
+		parameters = self.info_args["parameters"]
+		options = self.info_args["options"]
 		i = 1
-		while i<len(sys.argv):
+		while i < len(sys.argv):
 			arg = sys.argv[i]
 
-			# Get the list of all possible parameters
-			params_list = list(info_args["parameters"].keys())
-			for item in info_args["parameters"].items():
-				params_list += item[1]["aliases"] if "aliases" in item[1] else []
-
 			# Parameters
-			if arg in params_list:
+			if arg in self.__get_valid_aliases(parameters):
 				if i+1 >= len(sys.argv):
 					raise self.WrongArgumentsPlacement(arg)
 
-				self.args["parameters"][arg] = sys.argv[i+1]
+				key = self.__get_unaliased_argument(arg, parameters)
+				if key not in self.args["parameters"]:
+					self.args["parameters"][key] = []
+
+				self.args["parameters"][key].append(sys.argv[i+1])		# Add argument to the list of this parameter
 				i += 1
 
 			# Options
-			elif arg in info_args["options"]:
-				self.args["options"].append(arg)
+			elif arg in self.__get_valid_aliases(options):
+				self.args["options"].append(self.__get_unaliased_argument(arg, options))
 
 			# Positional parameters
 			else:
@@ -93,91 +111,90 @@ class Arguments:
 
 			i += 1
 
-		## Check for missing parameters ##
+		## Check for missing arguments ##
 
-		for arg, value in info_args["parameters"].items():
-			parsed = False
-			for parsed_arg in self.args["parameters"]:
-				if parsed_arg in params_list:
-					parsed = True
-					break
+		if len(self.args["positional"]) != len(self.info_args["positional"].keys()):
+			raise self.WrongArgumentsNumber()
 
-			if "required" in value and value["required"] and not parsed:
-					raise self.MissingRequiredArgument(arg)
+		for key, value in parameters.items():
+			if (
+				key not in self.args["parameters"] and
+				"required" in value and value["required"]
+			):
+				raise self.MissingRequiredArgument(key)
 
-		if len(self.args["positional"]) < len(info_args["positional"].keys()):
-			raise self.TooFewArguments()
-
-	def usage(self):
-		import sys
-
-		info_args = self.info["arguments"]
+	def usage(self, output_stream=sys.stderr):
 
 		## Usage ##
 
-		try:
-			usage = self.info["usage"]
-		except KeyError:
-			info_args = self.info["arguments"]
+		if "usage" not in self.info:
 			usage = sys.argv[0]
 
 			# Add options to usage
-			if len(info_args["options"].keys()) > 0:
+			if len(self.info_args["options"].keys()) > 0:
 				usage += " [OPTION]"
 
-			required_count = 0
-			for arg, value in info_args["parameters"].items():
+			required_params = []
+			for key, value in self.info_args["parameters"].items():
 				if "required" in value and value["required"]:
-					required_count += 1
+					required_params.append([key, value["name"]])
 
-			# Add required parameters to usage if they're not too many
-			if required_count <= self.MAX_USAGE_PARAMETERS:
-				for arg, value in info_args["parameters"].items():
-					if "required" in value and value["required"]:
-						usage += " " + arg + " " + value["name"].upper()
+			# Add required parameters if they're not too many
+			if len(required_params) <= self.MAX_USAGE_PARAMETERS:
+				for param in required_params:
+					usage += " " + param[0] + " " + param[1].upper()
 
-			# Add positional parameters to usage line
-			for arg, value in info_args["positional"].items():
-				usage += " " + arg.upper()
+			# Also add positional parameters
+			for key in self.info_args["positional"].keys():
+				usage += " " + key.upper()
 
-		print(f"Usage: {usage}")
-		print(
-			" "*self.INDENTATION +
-			((self.info["description"] + "\n") if "description" in self.info else "")
-		)
+			self.info["usage"] = usage
+
+		output_stream.write("Usage: " + self.info["usage"] + "\n")
+		if "description" in self.info:
+			output_stream.write(
+				" "*self.INDENTATION +
+				self.info["description"] + "\n"
+			)
+		output_stream.write("\n")
 
 		## Arguments help ##
 
 		for arg_type in self.args.keys():
-			if len(info_args[arg_type].keys()) > 0:
-				print(" "*self.INDENTATION + arg_type.title() + ":")
+			args_definition = self.info_args[arg_type]
 
-				# Create a list of aliases and descriptions to print
-				help_args = []
-				for arg, value in info_args[arg_type].items():
-					help_args.append([
-						(
-							(", ".join([arg] + value["aliases"]) if "aliases" in value else arg) + " " +		# Arguments and aliases
-							(value["name"] if "name" in value else "").upper()		# Name
-						),
-						value["description"] if "description" in value else ""
-					])
+			# Skip sections with no arguments
+			if len(args_definition.keys()) == 0:
+				continue
 
-				# Find the longest argument line
-				longest_arg = 0
-				for arg in help_args:
-					if len(arg[0]) > longest_arg:
-						longest_arg = len(arg[0])
+			output_stream.write(" "*self.INDENTATION + arg_type.title() + ":\n")
 
-				# Pad the argument and print them
-				for arg in help_args:
-					padding = self.INDENTATION*4 - len(arg[0])
-					if padding <= 1:
-						padding = 2
+			help_texts = []
+			for key, value in args_definition.items():
+				name = key
 
-					print(
-						" "*(self.INDENTATION+1) + arg[0] +		# Argument and aliases
-						" "*padding + arg[1]		# Description
-					)
+				if "aliases" in value:
+					name = ", ".join([name] + value["aliases"])
 
-				print()
+				if "name" in value:
+					name += " " + value["name"]
+
+				help_texts.append([
+					name,
+					value["description"] if "description" in value else ""
+				])
+
+			# Pad the argument and print them
+			for line in help_texts:
+				padding = self.INDENTATION*5 - len(line[0])
+
+				# Push the description if the name is too long
+				if padding <= 1:
+					padding = 2
+
+				output_stream.write(
+					" "*(self.INDENTATION+1) + line[0] +
+					" "*padding + line[1] + "\n"
+				)
+
+			output_stream.write("\n")
