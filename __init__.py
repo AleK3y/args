@@ -14,7 +14,7 @@ class Arguments:
 	args = {
 		"positional": [],
 		"parameters": {},
-		"options": []
+		"options": {}
 	}
 
 	##
@@ -142,11 +142,11 @@ class Arguments:
 			# Add required parameters if they're not too many
 			if len(required_params) <= self.MAX_USAGE_PARAMETERS:
 				for param in required_params:
-					usage += " " + param[0] + " " + param[1].upper()
+					usage += " " + param[0] + " " + param[1]
 
 			# Also add positional parameters
 			for key in self.info_args["positional"].keys():
-				usage += " " + key.upper()
+				usage += " " + key
 
 			self.info["usage"] = usage
 
