@@ -14,7 +14,7 @@ class Arguments:
 	args = {
 		"positional": [],
 		"parameters": {},
-		"options": {}
+		"options": []
 	}
 
 	##
@@ -152,10 +152,9 @@ class Arguments:
 
 		output_stream.write("Usage: " + self.info["usage"] + "\n")
 		if "description" in self.info:
-			output_stream.write(
-				" "*self.INDENTATION +
-				self.info["description"] + "\n"
-			)
+			description_lines = self.info["description"].split("\n")
+			for line in description_lines:
+				output_stream.write(" "*self.INDENTATION + line + "\n")
 		output_stream.write("\n")
 
 		## Arguments help ##
